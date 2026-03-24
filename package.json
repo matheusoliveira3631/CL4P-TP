@@ -1,0 +1,32 @@
+{
+  "name": "cl4p-tp",
+  "version": "0.1.0",
+  "description": "Offline-first personal server MVP for Android/Termux.",
+  "main": "bin/cl4ptp-api.js",
+  "scripts": {
+    "start": "node bin/cl4ptp-api.js",
+    "dev": "node --watch bin/cl4ptp-api.js",
+    "broker": "node bin/cl4ptp-mqtt-broker.js",
+    "filebrowser": "node bin/filebrowser-wrapper.js",
+    "test": "node --test --experimental-test-isolation=none",
+    "status": "node scripts/status.js",
+    "doctor": "node scripts/doctor.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:logs": "pm2 logs cl4ptp-api"
+  },
+  "keywords": [
+    "termux",
+    "android",
+    "mqtt",
+    "nas",
+    "offline-first"
+  ],
+  "author": "Matheus Oliveira",
+  "license": "MIT",
+  "dependencies": {
+    "aedes": "^0.51.3",
+    "express": "^4.21.2",
+    "mqtt": "^5.10.4"
+  }
+}
