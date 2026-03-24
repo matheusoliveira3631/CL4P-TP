@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CL4P-TP Status</title>
+    <link rel="stylesheet" href="/status-page/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">CL4P-TP</p>
+        <h1>Offline-first personal server</h1>
+        <p id="summary">Loading system snapshot...</p>
+      </header>
+
+      <section class="grid">
+        <article class="card">
+          <h2>System</h2>
+          <dl id="system-metrics"></dl>
+        </article>
+        <article class="card">
+          <h2>Services</h2>
+          <div id="services"></div>
+        </article>
+        <article class="card">
+          <h2>Storage</h2>
+          <div id="storage"></div>
+        </article>
+        <article class="card">
+          <h2>Links</h2>
+          <ul id="links"></ul>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Media Roots</h2>
+        <div id="media"></div>
+      </section>
+
+      <footer class="footer">
+        <span id="last-updated"></span>
+      </footer>
+    </main>
+
+    <script src="/status-page/app.js"></script>
+  </body>
+  </html>
