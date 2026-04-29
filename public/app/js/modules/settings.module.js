@@ -4,7 +4,7 @@ export function renderSettingsModule(root) {
   root.innerHTML = `
     <section class="panel">
       <h2>Settings</h2>
-      <p class="muted">Token usado apenas nesta sessao do navegador para chamadas POST. Use o valor de CL4PTP_API_TOKEN da sua .env. Se nao houver .env, o default do projeto e changeme-cl4ptp.</p>
+      <p class="muted">Token usado apenas nesta sessao do navegador para chamadas POST. A GUI inicia com changeme-cl4ptp; altere aqui se CL4PTP_API_TOKEN na sua .env for diferente.</p>
       <div class="form-grid">
         <div class="field full">
           <label for="api-token">API token</label>
@@ -14,7 +14,7 @@ export function renderSettingsModule(root) {
       <div class="actions">
         <button class="button" id="save-token" type="button">Salvar token da sessao</button>
       </div>
-      <pre id="settings-log" class="log">Token nao enviado em GET. POST usa header x-cl4ptp-token.</pre>
+      <pre id="settings-log" class="log">Token padrao ativo. POST usa header x-cl4ptp-token.</pre>
     </section>
   `;
 

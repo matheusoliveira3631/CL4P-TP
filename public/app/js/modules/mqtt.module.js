@@ -1,10 +1,5 @@
 import { apiGet, apiPost } from "../api.js";
 
-const defaultPayload = {
-  content: "Teste de impressao via CL4P-TP UI",
-  copies: 1
-};
-
 let topics = [];
 let selectedImage = null;
 
@@ -17,6 +12,28 @@ function formatJson(value) {
   return JSON.stringify(value, null, 2);
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function buildDefaultPayload() {
+  const now = new Date();
+  const day = padDatePart(now.getDate());
+  const month = padDatePart(now.getMonth() + 1);
+  const year = now.getFullYear();
+  const hours = padDatePart(now.getHours());
+  const minutes = padDatePart(now.getMinutes());
+
+  return {
+    content: `Pirambeira ${day}/${month}/${year} ${hours}:${minutes}`,
+    copies: 1
+  };
+}
+
 function findSelectedTopic(root) {
   const topicKey = root.querySelector("#mqtt-topic-key").value;
   return topics.find((topic) => topic.key === topicKey) || null;
@@ -25,6 +42,22 @@ function findSelectedTopic(root) {
 function writeLog(root, title, payload) {
   const log = root.querySelector("#mqtt-log");
   log.textContent = `${title}\n${formatJson(payload)}`;
+}
+
+function showSuccessModal(root, message) {
+  const modal = root.querySelector("#mqtt-success-modal");
+  const messageNode = root.querySelector("#mqtt-success-message");
+
+  if (!modal || !messageNode) {
+    return;
+  }
+
+  messageNode.textContent = message;
+  modal.hidden = false;
+  window.clearTimeout(showSuccessModal.timeoutId);
+  showSuccessModal.timeoutId = window.setTimeout(() => {
+    modal.hidden = true;
+  }, 2600);
 }
 
 function readableError(error) {
@@ -213,6 +246,13 @@ async function publishMqttMessage(root) {
     return;
   }
 
+  if (!isPlainObject(payload)) {
+    writeLog(root, "JSON invalido", {
+      message: "O payload deve ser um objeto JSON."
+    });
+    return;
+  }
+
   if (selectedImage) {
     payload.image = {
       ...selectedImage,
@@ -228,6 +268,7 @@ async function publishMqttMessage(root) {
   });
 
   writeLog(root, "Mensagem publicada.", response);
+  showSuccessModal(root, "Print job enviado para a fila MQTT.");
   await loadMqttStatus(root);
 }
 
@@ -239,6 +280,13 @@ async function sendMqttTest(root) {
 
 export async function renderMqttModule(root) {
   root.innerHTML = `
+    <div id="mqtt-success-modal" class="toast-modal" hidden role="status" aria-live="polite">
+      <div class="toast-card">
+        <span class="toast-icon" aria-hidden="true">✓</span>
+        <span id="mqtt-success-message">Print job enviado.</span>
+      </div>
+    </div>
+
     <section class="panel">
       <h2>MQTT</h2>
       <div id="mqtt-status" class="status-row">
@@ -274,7 +322,7 @@ export async function renderMqttModule(root) {
         </div>
         <div class="field full">
           <label for="mqtt-payload">Payload JSON</label>
-          <textarea id="mqtt-payload">${formatJson(defaultPayload)}</textarea>
+          <textarea id="mqtt-payload">${formatJson(buildDefaultPayload())}</textarea>
         </div>
         <div class="field full">
           <label for="mqtt-image">Selecionar ou tirar foto para o topo</label>

@@ -1,4 +1,5 @@
 const TOKEN_KEY = "cl4ptp.apiToken";
+const DEFAULT_TOKEN = "changeme-cl4ptp";
 
 async function parseJson(response) {
   const payload = await response.json().catch(() => ({
@@ -18,11 +19,11 @@ async function parseJson(response) {
 }
 
 export function getApiToken() {
-  return sessionStorage.getItem(TOKEN_KEY) || "";
+  return sessionStorage.getItem(TOKEN_KEY) || DEFAULT_TOKEN;
 }
 
 export function setApiToken(token) {
-  sessionStorage.setItem(TOKEN_KEY, token || "");
+  sessionStorage.setItem(TOKEN_KEY, token || DEFAULT_TOKEN);
 }
 
 export async function apiGet(path) {
