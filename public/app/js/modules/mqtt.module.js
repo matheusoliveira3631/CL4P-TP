@@ -47,6 +47,14 @@ function readImageFile(file) {
   });
 }
 
+function describeImageSource(file) {
+  if (!file) {
+    return "imagem";
+  }
+
+  return /^image\/jpe?g$/i.test(file.type) ? "foto/imagem" : "imagem";
+}
+
 function loadImage(dataUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -127,7 +135,7 @@ async function handleImageSelection(root) {
 
   try {
     selectedImage = await prepareImagePayload(file);
-    preview.textContent = `Imagem pronta: ${selectedImage.width}x${selectedImage.height}, ${Math.round(selectedImage.base64.length / 1024)} KB base64, JPEG q${selectedImage.quality}.`;
+    preview.textContent = `${describeImageSource(file)} pronta: ${selectedImage.width}x${selectedImage.height}, ${Math.round(selectedImage.base64.length / 1024)} KB base64, JPEG q${selectedImage.quality}.`;
   } catch (error) {
     input.value = "";
     writeLog(root, "Imagem invalida", { message: error.message });
@@ -269,9 +277,9 @@ export async function renderMqttModule(root) {
           <textarea id="mqtt-payload">${formatJson(defaultPayload)}</textarea>
         </div>
         <div class="field full">
-          <label for="mqtt-image">Imagem opcional do topo</label>
-          <input id="mqtt-image" type="file" accept="image/png,image/jpeg,image/webp">
-          <div id="mqtt-image-preview" class="muted">Nenhuma imagem selecionada.</div>
+          <label for="mqtt-image">Selecionar ou tirar foto para o topo</label>
+          <input id="mqtt-image" type="file" accept="image/png,image/jpeg,image/webp" capture="environment">
+          <div id="mqtt-image-preview" class="muted">Nenhuma imagem selecionada ou foto tirada.</div>
         </div>
         <div class="field">
           <label for="mqtt-image-mode">Tipo de imagem</label>
