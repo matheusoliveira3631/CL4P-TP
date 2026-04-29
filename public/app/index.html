@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CL4P-TP</title>
+    <link rel="stylesheet" href="/app/css/style.css">
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">CL</span>
+          <div>
+            <strong>CL4P-TP</strong>
+            <span>Local console</span>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Módulos">
+          <button class="nav-item active" data-module="dashboard" type="button">Dashboard</button>
+          <button class="nav-item" data-module="mqtt" type="button">MQTT</button>
+          <button class="nav-item" data-module="llm" type="button">LLM</button>
+          <button class="nav-item" data-module="automation" type="button">Automations</button>
+          <button class="nav-item" data-module="storage" type="button">Storage</button>
+          <button class="nav-item" data-module="settings" type="button">Settings</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1 id="page-title">Dashboard</h1>
+            <p id="page-subtitle">Visão local dos módulos CL4P-TP.</p>
+          </div>
+          <a class="legacy-link" href="/status-page/">Status legado</a>
+        </header>
+        <section id="app-root" class="content" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script type="module" src="/app/js/app.js"></script>
+  </body>
+</html>

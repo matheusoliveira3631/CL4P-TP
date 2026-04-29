@@ -29,7 +29,7 @@ const TOPICS = {
     type: "sunmi.print.status",
     qos: 0,
     retain: false,
-    subscribe: false
+    subscribe: true
   },
   systemStatus: {
     key: "systemStatus",

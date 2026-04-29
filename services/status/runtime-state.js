@@ -7,7 +7,9 @@ function createRuntimeState() {
       brokerRunning: false,
       lastError: "",
       lastMessageAt: "",
-      lastPublishedAt: ""
+      lastPublishedAt: "",
+      lastSunmiStatusAt: "",
+      lastSunmiStatus: null
     },
     media: {
       lastScanAt: ""

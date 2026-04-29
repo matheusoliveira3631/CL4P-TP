@@ -128,6 +128,11 @@ class MqttService {
       return;
     }
 
+    if (topicDefinition.type === "sunmi.print.status") {
+      this.recordSunmiPrintStatus(payload);
+      return;
+    }
+
     const validation = validateAutomationEnvelope(payload);
 
     if (!validation.ok) {
@@ -142,6 +147,20 @@ class MqttService {
     if (typeof this.onCommand === "function") {
       await this.onCommand(payload);
     }
+  }
+
+  recordSunmiPrintStatus(envelope) {
+    const status = {
+      id: envelope.id || "",
+      source: envelope.source || "",
+      timestamp: envelope.timestamp || new Date().toISOString(),
+      correlationId: envelope.correlationId || "",
+      data: envelope.data || {}
+    };
+
+    this.runtimeState.update("mqtt.lastSunmiStatusAt", new Date().toISOString());
+    this.runtimeState.update("mqtt.lastSunmiStatus", status);
+    this.logger.info("sunmi_print_status_received", status);
   }
 
   async publishByKey(topicKey, source, data, options = {}) {
@@ -208,6 +227,8 @@ class MqttService {
           lastError: runtime.lastError || "",
           lastMessageAt: runtime.lastMessageAt || "",
           lastPublishedAt: runtime.lastPublishedAt || "",
+          lastSunmiStatusAt: runtime.lastSunmiStatusAt || "",
+          lastSunmiStatus: runtime.lastSunmiStatus || null,
           subscribedTopics: getAllowedSubscribeTopics()
         },
         error: runtime.lastError || ""

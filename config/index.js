@@ -81,7 +81,7 @@ function loadConfig(options = {}) {
     },
     security: {
       apiToken: env.CL4PTP_API_TOKEN || "changeme-cl4ptp",
-      bodyLimit: env.CL4PTP_BODY_LIMIT || "64kb",
+      bodyLimit: env.CL4PTP_BODY_LIMIT || "512kb",
       rateLimitWindowMs: readInteger(env.CL4PTP_RATE_LIMIT_WINDOW_MS, 60000),
       rateLimitMax: readInteger(env.CL4PTP_RATE_LIMIT_MAX, 30)
     },

@@ -9,6 +9,8 @@ const { createIntentRoutes } = require("./routes/intent.routes");
 const { createCommandRoutes } = require("./routes/command.routes");
 const { createAutomationRoutes } = require("./routes/automation.routes");
 const { createMediaRoutes } = require("./routes/media.routes");
+const { createMqttRoutes } = require("./routes/mqtt.routes");
+const { createSystemRoutes } = require("./routes/system.routes");
 const { createAuthMiddleware } = require("./middlewares/auth.middleware");
 const { createRateLimitMiddleware } = require("./middlewares/rate-limit.middleware");
 const { createRequestLoggerMiddleware } = require("./middlewares/request-logger.middleware");
@@ -28,10 +30,13 @@ function createApp({ config, services }) {
   app.use(createAuthMiddleware(config));
 
   app.get("/", (_req, res) => {
-    res.redirect("/status-page/");
+    res.sendFile(path.join(config.paths.publicDir, "app", "index.html"));
   });
 
+  app.use("/app", express.static(path.join(config.paths.publicDir, "app")));
   app.use("/status-page", express.static(path.join(config.paths.statusPageDir)));
+  app.use("/api/system", createSystemRoutes(deps));
+  app.use("/api/mqtt", createMqttRoutes(deps));
   app.use("/health", createHealthRoutes(deps));
   app.use("/status", createStatusRoutes(deps));
   app.use("/services", createServicesRoutes(deps));

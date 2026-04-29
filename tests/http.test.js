@@ -10,7 +10,9 @@ const { createApp } = require("../api/app");
 
 async function createServer() {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "cl4ptp-http-"));
+  await fs.mkdir(path.join(rootDir, "public", "app"), { recursive: true });
   await fs.mkdir(path.join(rootDir, "public", "status"), { recursive: true });
+  await fs.writeFile(path.join(rootDir, "public", "app", "index.html"), "<!doctype html><title>app</title>");
   await fs.writeFile(path.join(rootDir, "public", "status", "index.html"), "<!doctype html><title>test</title>");
 
   const config = loadConfig({
@@ -73,6 +75,51 @@ test("status and media endpoints respond", async (t) => {
   assert.equal(mediaPayload.ok, true);
 });
 
+test("root serves local app and legacy status page remains available", async (t) => {
+  const runtime = await createServer();
+
+  t.after(async () => {
+    await runtime.services.mqttService.stop();
+    await new Promise((resolve) => runtime.server.close(resolve));
+  });
+
+  const appResponse = await fetch(`${runtime.baseUrl}/`);
+  const appHtml = await appResponse.text();
+  const legacyResponse = await fetch(`${runtime.baseUrl}/status-page/`);
+  const legacyHtml = await legacyResponse.text();
+
+  assert.equal(appResponse.status, 200);
+  assert.match(appHtml, /<title>app<\/title>/);
+  assert.equal(legacyResponse.status, 200);
+  assert.match(legacyHtml, /<title>test<\/title>/);
+});
+
+test("api system and mqtt status endpoints respond", async (t) => {
+  const runtime = await createServer();
+
+  t.after(async () => {
+    await runtime.services.mqttService.stop();
+    await new Promise((resolve) => runtime.server.close(resolve));
+  });
+
+  const systemResponse = await fetch(`${runtime.baseUrl}/api/system/status`);
+  const systemPayload = await systemResponse.json();
+  const mqttResponse = await fetch(`${runtime.baseUrl}/api/mqtt/status`);
+  const mqttPayload = await mqttResponse.json();
+  const topicsResponse = await fetch(`${runtime.baseUrl}/api/mqtt/topics`);
+  const topicsPayload = await topicsResponse.json();
+
+  assert.equal(systemResponse.status, 200);
+  assert.equal(systemPayload.ok, true);
+  assert.equal(systemPayload.data.service, "CL4P-TP");
+  assert.equal(mqttResponse.status, 200);
+  assert.equal(mqttPayload.ok, true);
+  assert.equal(mqttPayload.data.client.name, "mqttClient");
+  assert.equal(topicsResponse.status, 200);
+  assert.equal(topicsPayload.ok, true);
+  assert.equal(Array.isArray(topicsPayload.data.topics), true);
+});
+
 test("mutable endpoints require token", async (t) => {
   const runtime = await createServer();
 
@@ -92,6 +139,89 @@ test("mutable endpoints require token", async (t) => {
   });
 
   assert.equal(response.status, 401);
+});
+
+test("api mqtt publish requires token", async (t) => {
+  const runtime = await createServer();
+
+  t.after(async () => {
+    await runtime.services.mqttService.stop();
+    await new Promise((resolve) => runtime.server.close(resolve));
+  });
+
+  const response = await fetch(`${runtime.baseUrl}/api/mqtt/publish`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      topicKey: "automationEvent",
+      payload: {
+        message: "hello"
+      }
+    })
+  });
+
+  assert.equal(response.status, 401);
+});
+
+test("api mqtt publish rejects invalid body", async (t) => {
+  const runtime = await createServer();
+
+  t.after(async () => {
+    await runtime.services.mqttService.stop();
+    await new Promise((resolve) => runtime.server.close(resolve));
+  });
+
+  const response = await fetch(`${runtime.baseUrl}/api/mqtt/publish`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-cl4ptp-token": "test-token"
+    },
+    body: JSON.stringify({
+      topicKey: "",
+      payload: "invalid"
+    })
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error, "topic_key_required");
+});
+
+test("api mqtt publish accepts image payload shape before runtime publish", async (t) => {
+  const runtime = await createServer();
+
+  t.after(async () => {
+    await runtime.services.mqttService.stop();
+    await new Promise((resolve) => runtime.server.close(resolve));
+  });
+
+  const response = await fetch(`${runtime.baseUrl}/api/mqtt/publish`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-cl4ptp-token": "test-token"
+    },
+    body: JSON.stringify({
+      topicKey: "sunmiPrintRequest",
+      payload: {
+        content: "imagem",
+        image: {
+          mime: "image/png",
+          base64: "iVBORw0KGgo=",
+          placement: "header"
+        }
+      }
+    })
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 503);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error, "mqtt_client_not_connected");
 });
 
 test("intent parse works with token", async (t) => {

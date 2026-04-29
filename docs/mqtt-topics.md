@@ -43,10 +43,53 @@ Every message uses the same outer shape:
 
 ## SUNMI Scope
 
-For this MVP, SUNMI exists only on the NAS side:
+The CL4P-TP API publishes print requests to:
 
-- topic contract
-- publish handler
-- status observation
+`cl4ptp/sunmi/print/request`
 
-There is no POS implementation in this repository.
+Request payloads use the standard envelope with type `sunmi.print.request`:
+
+```json
+{
+  "id": "uuid",
+  "type": "sunmi.print.request",
+  "source": "api",
+  "timestamp": "2026-03-24T21:00:00.000Z",
+  "correlationId": "request-id",
+  "version": 1,
+  "data": {
+    "jobType": "text",
+    "content": "Texto para imprimir",
+    "copies": 1,
+    "meta": {
+      "origin": "cl4ptp",
+      "source": "api"
+    }
+  }
+}
+```
+
+The SUNMI printer app publishes print lifecycle events to:
+
+`cl4ptp/sunmi/print/status`
+
+Status payloads use the standard envelope with type `sunmi.print.status`:
+
+```json
+{
+  "id": "uuid",
+  "type": "sunmi.print.status",
+  "source": "sunmi-p2-printer-mvp",
+  "timestamp": "2026-03-24T21:00:00.000Z",
+  "correlationId": "print-job-id",
+  "version": 1,
+  "data": {
+    "jobId": "print-job-id",
+    "status": "queued|printing|completed|failed",
+    "message": "Print job completed.",
+    "error": ""
+  }
+}
+```
+
+The API subscribes to this status topic and stores the latest event in `runtime.mqtt.lastSunmiStatus`.
