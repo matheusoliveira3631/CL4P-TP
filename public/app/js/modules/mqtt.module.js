@@ -2,6 +2,8 @@ import { apiGet, apiPost } from "../api.js";
 
 let topics = [];
 let selectedImage = null;
+let selectedImageFile = null;
+let imageRotation = 0;
 let statusRefreshTimer = null;
 let canPublish = false;
 
@@ -106,7 +108,27 @@ function loadImage(dataUrl) {
   });
 }
 
-async function prepareImagePayload(file) {
+function normalizeImageRotation(value) {
+  return Number(value) === 90 ? 90 : 0;
+}
+
+function drawImageToCanvas(context, image, width, height, rotation) {
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+
+  if (rotation === 90) {
+    context.save();
+    context.translate(width, 0);
+    context.rotate(Math.PI / 2);
+    context.drawImage(image, 0, 0, height, width);
+    context.restore();
+    return;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+}
+
+async function prepareImagePayload(file, rotation = 0) {
   if (!file) {
     return null;
   }
@@ -119,20 +141,21 @@ async function prepareImagePayload(file) {
   const image = await loadImage(dataUrl);
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
+  const normalizedRotation = normalizeImageRotation(rotation);
+  const orientedWidth = normalizedRotation === 90 ? image.height : image.width;
+  const orientedHeight = normalizedRotation === 90 ? image.width : image.height;
 
-  let targetWidth = Math.min(maxImageWidth, image.width);
+  let targetWidth = Math.min(maxImageWidth, orientedWidth);
   let bestCandidate = null;
 
   while (targetWidth >= minImageWidth) {
-    const scale = targetWidth / image.width;
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
+    const scale = targetWidth / orientedWidth;
+    const width = Math.max(1, Math.round(orientedWidth * scale));
+    const height = Math.max(1, Math.round(orientedHeight * scale));
 
     canvas.width = width;
     canvas.height = height;
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, width, height);
-    context.drawImage(image, 0, 0, width, height);
+    drawImageToCanvas(context, image, width, height, normalizedRotation);
 
     for (const quality of jpegQualities) {
       const resizedDataUrl = canvas.toDataURL("image/jpeg", quality);
@@ -142,6 +165,7 @@ async function prepareImagePayload(file) {
         base64,
         placement: "header",
         mode: document.querySelector("#mqtt-image-mode")?.value || "photo",
+        rotation: normalizedRotation,
         width,
         height,
         quality
@@ -163,12 +187,30 @@ async function prepareImagePayload(file) {
   throw new Error(`Imagem ainda ficou grande demais (${bestSizeKb} KB base64). Use uma imagem menos detalhada.`);
 }
 
+function updateRotateButton(root) {
+  const rotateButton = root.querySelector("#mqtt-image-rotate");
+  if (!rotateButton) {
+    return;
+  }
+
+  rotateButton.disabled = !selectedImageFile;
+  rotateButton.textContent = `Rotate: ${imageRotation}°`;
+}
+
+function renderImagePreview(root, file) {
+  const preview = root.querySelector("#mqtt-image-preview");
+  preview.textContent = `${describeImageSource(file)} pronta: ${selectedImage.width}x${selectedImage.height}, rotacao ${selectedImage.rotation}°, ${Math.round(selectedImage.base64.length / 1024)} KB base64, JPEG q${selectedImage.quality}.`;
+}
+
 async function handleImageSelection(root) {
   const input = root.querySelector("#mqtt-image");
   const preview = root.querySelector("#mqtt-image-preview");
   const file = input.files && input.files[0] ? input.files[0] : null;
 
   selectedImage = null;
+  selectedImageFile = file;
+  imageRotation = 0;
+  updateRotateButton(root);
   preview.textContent = "Nenhuma imagem selecionada.";
 
   if (!file) {
@@ -176,10 +218,32 @@ async function handleImageSelection(root) {
   }
 
   try {
-    selectedImage = await prepareImagePayload(file);
-    preview.textContent = `${describeImageSource(file)} pronta: ${selectedImage.width}x${selectedImage.height}, ${Math.round(selectedImage.base64.length / 1024)} KB base64, JPEG q${selectedImage.quality}.`;
+    selectedImage = await prepareImagePayload(file, imageRotation);
+    renderImagePreview(root, file);
   } catch (error) {
     input.value = "";
+    selectedImageFile = null;
+    updateRotateButton(root);
+    writeLog(root, "Imagem invalida", { message: error.message });
+  }
+}
+
+async function rotateSelectedImage(root) {
+  if (!selectedImageFile) {
+    writeLog(root, "Imagem ausente", {
+      message: "Selecione ou tire uma foto antes de rotacionar."
+    });
+    return;
+  }
+
+  imageRotation = imageRotation === 90 ? 0 : 90;
+  updateRotateButton(root);
+
+  try {
+    selectedImage = await prepareImagePayload(selectedImageFile, imageRotation);
+    renderImagePreview(root, selectedImageFile);
+  } catch (error) {
+    selectedImage = null;
     writeLog(root, "Imagem invalida", { message: error.message });
   }
 }
@@ -362,6 +426,10 @@ export async function renderMqttModule(root) {
           <div id="mqtt-image-preview" class="muted">Nenhuma imagem selecionada ou foto tirada.</div>
         </div>
         <div class="field">
+          <label for="mqtt-image-rotate">Rotacao</label>
+          <button class="button secondary" id="mqtt-image-rotate" type="button" disabled>Rotate: 0°</button>
+        </div>
+        <div class="field">
           <label for="mqtt-image-mode">Tipo de imagem</label>
           <select id="mqtt-image-mode">
             <option value="photo">Foto</option>
@@ -393,6 +461,9 @@ export async function renderMqttModule(root) {
   root.querySelector("#mqtt-topic-key").addEventListener("change", () => updateResolvedTopic(root));
   root.querySelector("#mqtt-image").addEventListener("change", () => {
     handleImageSelection(root).catch((error) => writeLog(root, "Erro ao processar imagem.", { message: error.message }));
+  });
+  root.querySelector("#mqtt-image-rotate").addEventListener("click", () => {
+    rotateSelectedImage(root).catch((error) => writeLog(root, "Erro ao rotacionar imagem.", { message: error.message }));
   });
   root.querySelector("#mqtt-publish").addEventListener("click", () => {
     publishMqttMessage(root).catch((error) => writeLog(root, "Erro ao publicar.", readableError(error)));

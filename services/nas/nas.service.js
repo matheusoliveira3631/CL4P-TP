@@ -35,31 +35,24 @@ class NasService {
 
         const result = Promise.all(
             entries.map(async (item)=>{
-                if(entries.type === 'directory')
+                if(item.type === 'file')
                 {
-
-
-                    return{
-                        ...entries
-
+                    const { size, mtime } = this.storageService.statPath(rootKey, item.relativePath)
+                    item = {
+                        ...item,
+                        size, 
+                        mtime
                     }
                 }
             })
         )
 
+        return result
+
     }
 
-    async recurseList(rootKey, entries)
-    {
-        
-        return Promisse.all(entries.map(async (item)=>{
-            if(item.type === 'directory')
-            {
-                const children = this.storageService.listDirectory(rootKey, item.relativePath)
-            }
-        }))
-        
-    }
+
+    
 
 
 
