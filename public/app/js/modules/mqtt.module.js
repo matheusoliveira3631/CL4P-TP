@@ -5,7 +5,6 @@ let selectedImage = null;
 let selectedImageFile = null;
 let imageRotation = 0;
 let statusRefreshTimer = null;
-let canPublish = false;
 
 const maxImageWidth = 384;
 const minImageWidth = 96;
@@ -48,18 +47,22 @@ function writeLog(root, title, payload) {
   log.textContent = `${title}\n${formatJson(payload)}`;
 }
 
-function showSuccessModal(root, message) {
+function showToast(root, message, type = "success") {
   const modal = root.querySelector("#mqtt-success-modal");
   const messageNode = root.querySelector("#mqtt-success-message");
+  const card = root.querySelector("#mqtt-toast-card");
+  const icon = root.querySelector("#mqtt-toast-icon");
 
-  if (!modal || !messageNode) {
+  if (!modal || !messageNode || !card || !icon) {
     return;
   }
 
+  card.classList.toggle("error", type === "error");
+  icon.textContent = type === "error" ? "!" : "OK";
   messageNode.textContent = message;
   modal.hidden = false;
-  window.clearTimeout(showSuccessModal.timeoutId);
-  showSuccessModal.timeoutId = window.setTimeout(() => {
+  window.clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = window.setTimeout(() => {
     modal.hidden = true;
   }, 2600);
 }
@@ -251,32 +254,21 @@ async function rotateSelectedImage(root) {
 function renderStatus(root, data) {
   const client = data.client;
   const broker = data.broker;
-  const sunmi = data.sunmi || { state: "down", lastSeenAt: "", staleAfterMs: 15000, lastStatus: null };
   const runtime = data.runtime;
-  const lastSunmi = sunmi.lastStatus || runtime.lastSunmiStatus;
-  canPublish = broker.state === "up" && client.state === "up" && sunmi.state === "up";
+  const lastSunmi = runtime.lastSunmiStatus;
 
   root.querySelector("#mqtt-status").innerHTML = `
     <span class="badge ${broker.state}">Broker CL4P: ${broker.state}</span>
     <span class="badge ${client.state}">Cliente API: ${client.state}</span>
-    <span class="badge ${sunmi.state === "up" ? "connected" : "down"}">Sunmi APK: ${sunmi.state}</span>
+    <span class="badge ${lastSunmi ? "connected" : "pending"}">Sunmi APK: ${lastSunmi ? "ultimo status recebido" : "sem status recebido"}</span>
     <span class="badge">last publish: ${runtime.lastPublishedAt || "-"}</span>
     <span class="badge">last message: ${runtime.lastMessageAt || "-"}</span>
-    <span class="badge">Sunmi last seen: ${sunmi.lastSeenAt || "-"}</span>
+    <span class="badge">Sunmi last status: ${runtime.lastSunmiStatusAt || "-"}</span>
   `;
 
   root.querySelector("#mqtt-sunmi-status").textContent = lastSunmi
     ? formatJson(lastSunmi)
-    : "Nenhum heartbeat/status Sunmi recebido ainda. Broker/Cliente API up nao significa que o APK da printer ja conectou.";
-
-  const publishButton = root.querySelector("#mqtt-publish");
-  const publishWarning = root.querySelector("#mqtt-publish-warning");
-  if (publishButton && publishWarning) {
-    publishButton.disabled = !canPublish;
-    publishWarning.textContent = canPublish
-      ? ""
-      : "Publicacao bloqueada: Sunmi offline ou broker/API MQTT desconectado.";
-  }
+    : "Nenhum status Sunmi recebido ainda. A confirmacao de recepcao e checada apos cada publish.";
 }
 
 function renderTopicOptions(root) {
@@ -308,6 +300,39 @@ async function loadMqttStatus(root, options = {}) {
   }
 }
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isPrinterReceiptConfirmed(status, envelopeId) {
+  const lastStatus = status?.data?.runtime?.lastSunmiStatus;
+  const printStatus = lastStatus?.data?.status || "";
+  const acceptedStatuses = new Set(["queued", "printing", "completed"]);
+
+  return Boolean(lastStatus)
+    && lastStatus.correlationId === envelopeId
+    && acceptedStatuses.has(printStatus);
+}
+
+async function confirmPrinterReceipt(root, envelopeId) {
+  await delay(2000);
+  const status = await apiGet("/api/mqtt/status");
+  renderStatus(root, status.data);
+
+  if (isPrinterReceiptConfirmed(status, envelopeId)) {
+    showToast(root, "Print job confirmado pela printer.");
+    writeLog(root, "Printer confirmou recepcao.", status);
+    return;
+  }
+
+  showToast(root, "Mensagem publicada no broker, mas a printer nao confirmou recepcao.", "error");
+  writeLog(root, "Sem confirmacao da printer.", {
+    message: "Mensagem publicada no broker, mas a printer nao confirmou recepcao.",
+    envelopeId,
+    lastSunmiStatus: status.data.runtime.lastSunmiStatus || null
+  });
+}
+
 async function loadTopics(root) {
   const response = await apiGet("/api/mqtt/topics");
   topics = response.data.topics || [];
@@ -315,13 +340,6 @@ async function loadTopics(root) {
 }
 
 async function publishMqttMessage(root) {
-  if (!canPublish) {
-    writeLog(root, "Conexao indisponivel", {
-      message: "Publicacao bloqueada: Sunmi offline ou broker/API MQTT desconectado."
-    });
-    return;
-  }
-
   const topic = findSelectedTopic(root);
   if (!topic) {
     writeLog(root, "Erro", {
@@ -362,8 +380,13 @@ async function publishMqttMessage(root) {
   });
 
   writeLog(root, "Mensagem publicada.", response);
-  showSuccessModal(root, "Print job enviado para a fila MQTT.");
-  await loadMqttStatus(root);
+  await loadMqttStatus(root, { writeLog: false });
+
+  if (topic.key === "sunmiPrintRequest") {
+    await confirmPrinterReceipt(root, response.data.envelope.id);
+  } else {
+    showToast(root, "Mensagem publicada no broker.");
+  }
 }
 
 async function sendMqttTest(root) {
@@ -377,8 +400,8 @@ export async function renderMqttModule(root) {
 
   root.innerHTML = `
     <div id="mqtt-success-modal" class="toast-modal" hidden role="status" aria-live="polite">
-      <div class="toast-card">
-        <span class="toast-icon" aria-hidden="true">✓</span>
+      <div id="mqtt-toast-card" class="toast-card">
+        <span id="mqtt-toast-icon" class="toast-icon" aria-hidden="true">OK</span>
         <span id="mqtt-success-message">Print job enviado.</span>
       </div>
     </div>
@@ -441,7 +464,6 @@ export async function renderMqttModule(root) {
         <button class="button" id="mqtt-publish" type="button">Publicar</button>
         <button class="button secondary" id="mqtt-test" type="button">Enviar teste</button>
       </div>
-      <div id="mqtt-publish-warning" class="danger-text"></div>
     </section>
 
     <section class="panel">

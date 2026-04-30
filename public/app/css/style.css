@@ -330,6 +330,12 @@ button:disabled {
   padding: 13px 16px;
 }
 
+.toast-card.error {
+  border-color: #f0b8b4;
+  background: #fff1f0;
+  color: var(--bad);
+}
+
 .toast-icon {
   display: grid;
   place-items: center;
@@ -341,6 +347,10 @@ button:disabled {
   color: #ffffff;
   font-size: 16px;
   line-height: 1;
+}
+
+.toast-card.error .toast-icon {
+  background: var(--bad);
 }
 
 @media (max-width: 820px) {

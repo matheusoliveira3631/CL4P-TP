@@ -4,8 +4,6 @@ const { createEnvelope, validateAutomationEnvelope } = require("./payload-schema
 const { findTopicByName, getAllowedSubscribeTopics, getTopic, getTopicDefinition, isAllowedPublishTopic, listTopics } = require("./topic-registry");
 const { EmbeddedBroker } = require("./embedded-broker");
 
-const SUNMI_STALE_AFTER_MS = 15000;
-
 class MqttService {
   constructor({ config, runtimeState, logger }) {
     this.config = config;
@@ -165,19 +163,6 @@ class MqttService {
     this.logger.info("sunmi_print_status_received", status);
   }
 
-  getSunmiStatus(runtime = this.runtimeState.snapshot().mqtt) {
-    const lastSeenAt = runtime.lastSunmiStatusAt || "";
-    const lastSeenMs = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
-    const isFresh = Number.isFinite(lastSeenMs) && Date.now() - lastSeenMs <= SUNMI_STALE_AFTER_MS;
-
-    return {
-      state: isFresh ? "up" : "down",
-      lastSeenAt,
-      staleAfterMs: SUNMI_STALE_AFTER_MS,
-      lastStatus: runtime.lastSunmiStatus || null
-    };
-  }
-
   async publishByKey(topicKey, source, data, options = {}) {
     if (!isAllowedPublishTopic(topicKey)) {
       const error = new Error("topic_not_allowed");
@@ -261,8 +246,7 @@ class MqttService {
           topics: listTopics()
         },
         error: runtime.lastError || ""
-      }),
-      sunmi: this.getSunmiStatus(runtime)
+      })
     };
   }
 

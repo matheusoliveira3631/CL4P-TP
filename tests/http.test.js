@@ -6,8 +6,6 @@ const fs = require("fs/promises");
 const path = require("path");
 const { loadConfig } = require("../config");
 const { createServiceContainer } = require("../core/state/service-container");
-const { createRuntimeState } = require("../services/status/runtime-state");
-const { MqttService } = require("../services/mqtt/mqtt.service");
 const { createApp } = require("../api/app");
 
 async function createServer() {
@@ -117,42 +115,10 @@ test("api system and mqtt status endpoints respond", async (t) => {
   assert.equal(mqttResponse.status, 200);
   assert.equal(mqttPayload.ok, true);
   assert.equal(mqttPayload.data.client.name, "mqttClient");
-  assert.equal(mqttPayload.data.sunmi.state, "down");
+  assert.equal(mqttPayload.data.runtime.lastSunmiStatus, null);
   assert.equal(topicsResponse.status, 200);
   assert.equal(topicsPayload.ok, true);
   assert.equal(Array.isArray(topicsPayload.data.topics), true);
-});
-
-test("mqtt status derives sunmi presence from recent status heartbeat", async () => {
-  const config = loadConfig({
-    rootDir: process.cwd(),
-    env: {
-      ...process.env,
-      CL4PTP_MQTT_EMBEDDED_ENABLED: "false",
-      CL4PTP_MQTT_BROKER_URL: "mqtt://127.0.0.1:65530"
-    }
-  });
-  const runtimeState = createRuntimeState();
-  const logger = {
-    info() {},
-    warn() {}
-  };
-  const mqttService = new MqttService({ config, runtimeState, logger });
-
-  mqttService.recordSunmiPrintStatus({
-    id: "heartbeat-1",
-    source: "sunmi-p2-printer-mvp",
-    data: {
-      kind: "heartbeat",
-      status: "online"
-    }
-  });
-
-  assert.equal((await mqttService.getStatuses()).sunmi.state, "up");
-
-  runtimeState.update("mqtt.lastSunmiStatusAt", new Date(Date.now() - 20000).toISOString());
-
-  assert.equal((await mqttService.getStatuses()).sunmi.state, "down");
 });
 
 test("mutable endpoints require token", async (t) => {
