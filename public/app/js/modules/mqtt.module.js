@@ -2,6 +2,8 @@ import { apiGet, apiPost } from "../api.js";
 
 let topics = [];
 let selectedImage = null;
+let statusRefreshTimer = null;
+let canPublish = false;
 
 const maxImageWidth = 384;
 const minImageWidth = 96;
@@ -58,6 +60,13 @@ function showSuccessModal(root, message) {
   showSuccessModal.timeoutId = window.setTimeout(() => {
     modal.hidden = true;
   }, 2600);
+}
+
+function stopStatusRefresh() {
+  if (statusRefreshTimer) {
+    window.clearInterval(statusRefreshTimer);
+    statusRefreshTimer = null;
+  }
 }
 
 function readableError(error) {
@@ -178,20 +187,32 @@ async function handleImageSelection(root) {
 function renderStatus(root, data) {
   const client = data.client;
   const broker = data.broker;
+  const sunmi = data.sunmi || { state: "down", lastSeenAt: "", staleAfterMs: 15000, lastStatus: null };
   const runtime = data.runtime;
-  const lastSunmi = runtime.lastSunmiStatus;
+  const lastSunmi = sunmi.lastStatus || runtime.lastSunmiStatus;
+  canPublish = broker.state === "up" && client.state === "up" && sunmi.state === "up";
 
   root.querySelector("#mqtt-status").innerHTML = `
     <span class="badge ${broker.state}">Broker CL4P: ${broker.state}</span>
     <span class="badge ${client.state}">Cliente API: ${client.state}</span>
-    <span class="badge ${lastSunmi ? "connected" : "pending"}">Sunmi APK: ${lastSunmi ? "com status recebido" : "sem status recebido"}</span>
+    <span class="badge ${sunmi.state === "up" ? "connected" : "down"}">Sunmi APK: ${sunmi.state}</span>
     <span class="badge">last publish: ${runtime.lastPublishedAt || "-"}</span>
     <span class="badge">last message: ${runtime.lastMessageAt || "-"}</span>
+    <span class="badge">Sunmi last seen: ${sunmi.lastSeenAt || "-"}</span>
   `;
 
   root.querySelector("#mqtt-sunmi-status").textContent = lastSunmi
     ? formatJson(lastSunmi)
-    : "Nenhum status Sunmi recebido ainda. Broker/Cliente API up nao significa que o APK da printer ja conectou.";
+    : "Nenhum heartbeat/status Sunmi recebido ainda. Broker/Cliente API up nao significa que o APK da printer ja conectou.";
+
+  const publishButton = root.querySelector("#mqtt-publish");
+  const publishWarning = root.querySelector("#mqtt-publish-warning");
+  if (publishButton && publishWarning) {
+    publishButton.disabled = !canPublish;
+    publishWarning.textContent = canPublish
+      ? ""
+      : "Publicacao bloqueada: Sunmi offline ou broker/API MQTT desconectado.";
+  }
 }
 
 function renderTopicOptions(root) {
@@ -215,10 +236,12 @@ function updateResolvedTopic(root) {
   root.querySelector("#mqtt-retain").checked = topic ? Boolean(topic.retain) : false;
 }
 
-async function loadMqttStatus(root) {
+async function loadMqttStatus(root, options = {}) {
   const response = await apiGet("/api/mqtt/status");
   renderStatus(root, response.data);
-  writeLog(root, "Status MQTT atualizado.", response);
+  if (options.writeLog !== false) {
+    writeLog(root, "Status MQTT atualizado.", response);
+  }
 }
 
 async function loadTopics(root) {
@@ -228,6 +251,13 @@ async function loadTopics(root) {
 }
 
 async function publishMqttMessage(root) {
+  if (!canPublish) {
+    writeLog(root, "Conexao indisponivel", {
+      message: "Publicacao bloqueada: Sunmi offline ou broker/API MQTT desconectado."
+    });
+    return;
+  }
+
   const topic = findSelectedTopic(root);
   if (!topic) {
     writeLog(root, "Erro", {
@@ -279,6 +309,8 @@ async function sendMqttTest(root) {
 }
 
 export async function renderMqttModule(root) {
+  stopStatusRefresh();
+
   root.innerHTML = `
     <div id="mqtt-success-modal" class="toast-modal" hidden role="status" aria-live="polite">
       <div class="toast-card">
@@ -341,6 +373,7 @@ export async function renderMqttModule(root) {
         <button class="button" id="mqtt-publish" type="button">Publicar</button>
         <button class="button secondary" id="mqtt-test" type="button">Enviar teste</button>
       </div>
+      <div id="mqtt-publish-warning" class="danger-text"></div>
     </section>
 
     <section class="panel">
@@ -370,4 +403,12 @@ export async function renderMqttModule(root) {
 
   await loadTopics(root);
   await loadMqttStatus(root);
+  statusRefreshTimer = window.setInterval(() => {
+    if (!root.isConnected || !root.querySelector("#mqtt-status")) {
+      stopStatusRefresh();
+      return;
+    }
+
+    loadMqttStatus(root, { writeLog: false }).catch((error) => writeLog(root, "Erro ao atualizar status.", readableError(error)));
+  }, 5000);
 }

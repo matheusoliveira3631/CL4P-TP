@@ -37,6 +37,7 @@ function createMqttController({ mqttService, runtimeState, logger }) {
       success(res, {
         client: statuses.client,
         broker: statuses.broker,
+        sunmi: statuses.sunmi,
         runtime
       });
     },
