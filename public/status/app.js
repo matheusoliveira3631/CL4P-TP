@@ -111,3 +111,80 @@ refresh().catch((error) => {
 setInterval(() => {
   refresh().catch(() => {});
 }, 15000);
+
+function getToken() {
+  let token = localStorage.getItem("cl4ptpApiToken");
+  if (!token) {
+    token = window.prompt("Token da API do CL4P-TP (CL4PTP_API_TOKEN):", "");
+    if (token) {
+      localStorage.setItem("cl4ptpApiToken", token);
+    }
+  }
+  return token;
+}
+
+function setupPrintForm() {
+  const textArea = document.getElementById("printText");
+  const button = document.getElementById("printButton");
+  const statusEl = document.getElementById("printStatus");
+
+  button.addEventListener("click", async () => {
+    const content = textArea.value.trim();
+
+    if (!content) {
+      statusEl.textContent = "Digite um texto antes de imprimir.";
+      statusEl.className = "hint bad";
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      statusEl.textContent = "Token não informado.";
+      statusEl.className = "hint bad";
+      return;
+    }
+
+    button.disabled = true;
+    statusEl.textContent = "Enviando...";
+    statusEl.className = "hint";
+
+    try {
+      const response = await fetch("/command", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          intent: {
+            type: "automation",
+            action: "request_print",
+            target: "sunmi",
+            params: { content }
+          }
+        })
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || payload.ok === false || (payload.execution && payload.execution.status !== "completed")) {
+        throw new Error((payload.execution && payload.execution.error) || payload.error || "Falha ao imprimir");
+      }
+
+      statusEl.textContent = `Enviado com sucesso às ${new Date().toLocaleTimeString()}.`;
+      statusEl.className = "hint ok";
+      textArea.value = "";
+    } catch (error) {
+      if (error.message === "invalid_api_token") {
+        localStorage.removeItem("cl4ptpApiToken");
+      }
+      statusEl.textContent = `Erro: ${error.message}`;
+      statusEl.className = "hint bad";
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+setupPrintForm();
