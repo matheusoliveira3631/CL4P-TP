@@ -28,7 +28,10 @@ function createApp({ config, services }) {
   app.use(createRateLimitMiddleware(config));
   app.use(createAuthMiddleware(config));
 
-  app.use("/", express.static(path.join(config.paths.hubPageDir)));
+  app.get("/", (_req, res) => {
+    res.sendFile(path.join(config.paths.hubPageDir, "index.html"));
+  });
+  app.use("/hub", express.static(path.join(config.paths.hubPageDir)));
   app.use("/status-page", express.static(path.join(config.paths.statusPageDir)));
   app.use("/notes", express.static(path.join(config.paths.notesPageDir)));
   app.use("/notes", createNotesRoutes(deps));
