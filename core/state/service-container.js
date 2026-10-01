@@ -12,6 +12,7 @@ const { LlamaCppAdapter } = require("../../services/llm/adapters/llamacpp.adapte
 const { OpenAiIntentAdapter } = require("../../services/llm/adapters/openai.adapter");
 const { LlmService } = require("../../services/llm/llm.service");
 const { MqttService } = require("../../services/mqtt/mqtt.service");
+const { NotesService } = require("../../services/notes/notes.service");
 const { createHandlerRegistry } = require("../executor/handler-registry");
 const { AutomationExecutor } = require("../executor/automation-executor");
 const { CommandRouter } = require("../router/command-router");
@@ -43,6 +44,7 @@ async function createServiceContainer(config) {
   });
   const mqttService = new MqttService({ config, runtimeState, logger });
   const linksService = new LinksService({ config, networkService });
+  const notesService = new NotesService({ paths: config.paths, logger });
 
   const statusAggregator = new StatusAggregator({
     config,
@@ -69,7 +71,8 @@ async function createServiceContainer(config) {
     mediaService,
     llmService,
     mqttService,
-    statusAggregator
+    statusAggregator,
+    notesService
   };
 
   const registry = createHandlerRegistry();
@@ -95,6 +98,7 @@ async function createServiceContainer(config) {
 
   services.executor = executor;
   services.commandRouter = commandRouter;
+  services.notesService = notesService;
 
   await storageService.ensureRepoDirectories();
   await storageService.scanRoots();
