@@ -1,40 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-br">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CL4P-TP Hub</title>
+    <title>CL4P-TP</title>
     <link rel="stylesheet" href="/hub/styles.css" />
   </head>
   <body>
+    <div class="bg-glow"></div>
+
     <main class="shell">
       <header class="hero">
-        <p class="eyebrow">CL4P-TP</p>
-        <h1>Hub</h1>
-        <p class="sub">Escolha um módulo.</p>
+        <div class="brand">
+          <span class="brand-mark">⌁</span>
+          <span class="brand-name">CL4P-TP</span>
+        </div>
+        <h1>Central do hub</h1>
+        <p class="sub" id="summary">conectando...</p>
       </header>
 
       <section class="grid" id="modules">
-        <a class="card module" href="/notes/">
-          <h2>Notas</h2>
-          <p>Texto, imagens e fotos impressas na SUNMI.</p>
+        <a class="tile" href="/notes/" data-key="notes">
+          <span class="tile-icon">🖨️</span>
+          <span class="tile-body">
+            <span class="tile-title">Notas</span>
+            <span class="tile-desc">Texto, imagens e fotos impressas na SUNMI</span>
+          </span>
+          <span class="tile-arrow">→</span>
         </a>
-        <a class="card module" href="/status-page/">
-          <h2>Status</h2>
-          <p>Monitoramento do servidor, serviços e storage.</p>
+
+        <a class="tile" href="/status-page/" data-key="status">
+          <span class="tile-icon">📊</span>
+          <span class="tile-body">
+            <span class="tile-title">Status</span>
+            <span class="tile-desc">Monitoramento do servidor e serviços</span>
+          </span>
+          <span class="tile-arrow">→</span>
         </a>
-        <a class="card module disabled" id="fileBrowserLink" href="#" target="_blank" rel="noreferrer">
-          <h2>FileBrowser</h2>
-          <p>Arquivos do NAS.</p>
+
+        <a class="tile is-disabled" id="fileBrowserLink" href="#" target="_blank" rel="noreferrer" data-key="filebrowser">
+          <span class="tile-icon">🗂️</span>
+          <span class="tile-body">
+            <span class="tile-title">FileBrowser</span>
+            <span class="tile-desc">Arquivos do NAS</span>
+          </span>
+          <span class="tile-status" data-status></span>
         </a>
-        <a class="card module disabled" id="jellyfinLink" href="#" target="_blank" rel="noreferrer">
-          <h2>Jellyfin</h2>
-          <p>Mídia da casa.</p>
+
+        <a class="tile is-disabled" id="jellyfinLink" href="#" target="_blank" rel="noreferrer" data-key="jellyfin">
+          <span class="tile-icon">🎬</span>
+          <span class="tile-body">
+            <span class="tile-title">Jellyfin</span>
+            <span class="tile-desc">Mídia da casa</span>
+          </span>
+          <span class="tile-status" data-status></span>
         </a>
       </section>
 
       <footer class="footer">
-        <span id="summary">Carregando status...</span>
+        <span id="meta"></span>
       </footer>
     </main>
 
