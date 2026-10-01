@@ -1,42 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-br">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CL4P-TP Status</title>
+    <link rel="stylesheet" href="/shared/theme.css" />
     <link rel="stylesheet" href="/status-page/styles.css" />
   </head>
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="eyebrow">CL4P-TP</p>
-        <h1>Offline-first personal server</h1>
-        <p id="summary">Loading system snapshot...</p>
-        <p class="sub"><a href="/">&larr; Hub</a></p>
+        <a class="brand" href="/">
+          <span class="brand-mark">⌁</span>
+          <span>CL4P-TP</span>
+        </a>
+        <h1>Status</h1>
+        <p class="sub" id="summary">conectando...</p>
       </header>
 
-      <section class="grid">
-        <article class="card">
-          <h2>System</h2>
-          <dl id="system-metrics"></dl>
+      <section class="bento">
+        <article class="panel system">
+          <h2>Sistema</h2>
+          <div id="system-metrics" class="stat-grid"></div>
         </article>
-        <article class="card">
-          <h2>Services</h2>
-          <div id="services"></div>
-        </article>
-        <article class="card">
-          <h2>Storage</h2>
+
+        <article class="panel storage">
+          <h2>Armazenamento</h2>
           <div id="storage"></div>
         </article>
-        <article class="card">
-          <h2>Links</h2>
-          <ul id="links"></ul>
-        </article>
-      </section>
 
-      <section class="card">
-        <h2>Media Roots</h2>
-        <div id="media"></div>
+        <article class="panel services">
+          <h2>Serviços</h2>
+          <div id="services"></div>
+        </article>
       </section>
 
       <footer class="footer">
@@ -46,4 +42,4 @@
 
     <script src="/status-page/app.js"></script>
   </body>
-  </html>
+</html>

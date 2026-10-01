@@ -12,6 +12,7 @@ function createNotesRoutes(deps) {
 
   router.get("/list", wrap(controller.list));
   router.post("/", wrap(controller.create));
+  router.post("/:id/reprint", wrap(controller.reprint));
   router.use("/images", express.static(path.join(deps.config.paths.notesImagesDir)));
 
   return router;

@@ -1,51 +1,55 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-br">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CL4P-TP Notas</title>
+    <link rel="stylesheet" href="/shared/theme.css" />
     <link rel="stylesheet" href="/notes/styles.css" />
   </head>
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="eyebrow"><a href="/">CL4P-TP</a></p>
+        <a class="brand" href="/">
+          <span class="brand-mark">⌁</span>
+          <span>CL4P-TP</span>
+        </a>
         <h1>Notas</h1>
         <p class="sub">Texto e imagens impressos direto na SUNMI.</p>
       </header>
 
-      <section class="card">
+      <section class="panel">
         <form id="noteForm">
           <textarea id="noteText" placeholder="Escreva sua nota ou legenda..." rows="3"></textarea>
 
-          <div class="image-row">
-            <label class="file-button">
+          <div class="controls-row" id="attachRow">
+            <label class="btn btn-ghost">
               Anexar imagem
               <input type="file" id="imageInput" accept="image/*" hidden />
             </label>
-            <button type="button" id="cameraButton" class="file-button" hidden>Tirar foto</button>
+            <button type="button" id="cameraButton" class="btn btn-ghost" hidden>Tirar foto</button>
           </div>
 
           <video id="cameraPreview" autoplay playsinline hidden></video>
-          <div id="cameraControls" class="image-row" hidden>
-            <button type="button" id="captureButton">Capturar</button>
-            <button type="button" id="cancelCameraButton">Cancelar</button>
+          <div class="controls-row" id="cameraControlsRow" hidden>
+            <button type="button" id="captureButton" class="btn btn-ghost">Capturar</button>
+            <button type="button" id="cancelCameraButton" class="btn btn-ghost">Cancelar</button>
           </div>
 
           <div id="imagePreviewWrap" class="image-preview-wrap" hidden>
             <canvas id="imageCanvas"></canvas>
-            <div class="image-row">
-              <button type="button" id="rotateButton">Rotacionar</button>
-              <button type="button" id="removeImageButton">Remover imagem</button>
+            <div class="controls-row">
+              <button type="button" id="rotateButton" class="btn btn-ghost">Rotacionar</button>
+              <button type="button" id="removeImageButton" class="btn btn-ghost">Remover imagem</button>
             </div>
           </div>
 
-          <button id="submitButton" type="submit">Imprimir na SUNMI</button>
+          <button id="submitButton" class="btn btn-primary btn-block" type="submit">Imprimir na SUNMI</button>
           <p id="formStatus" class="hint"></p>
         </form>
       </section>
 
-      <section class="card">
+      <section class="panel">
         <h2>Histórico</h2>
         <div id="notesList" class="notes-list"></div>
       </section>

@@ -28,19 +28,16 @@ class StatusAggregator {
   }
 
   async getServicesStatus() {
-    const [storageStatus, llmHealth, mqttHealth, fileBrowserStatus, jellyfinStatus] = await Promise.all([
-      this.storageService.getStatus(),
-      this.llmService.getHealth(),
+    const [mqttHealth, fileBrowserStatus, jellyfinStatus] = await Promise.all([
       this.mqttService.getStatuses(),
       this.fileBrowserProvider.getStatus(),
       this.jellyfinProvider.getStatus()
     ]);
 
-    const mediaStatus = await this.mediaService.getStatus({
-      fileBrowserStatus,
-      jellyfinStatus
-    });
-
+    // Note: llm and media are deliberately left out of this list. llm's
+    // "up" state just meant the mock adapter was selected (nothing is
+    // actually running), and media was a pass-through summary of
+    // filebrowser/jellyfin that duplicated those two entries below.
     const services = {
       api: createServiceStatus({
         name: "api",
@@ -52,10 +49,7 @@ class StatusAggregator {
       }),
       mqttClient: mqttHealth.client,
       mqttBroker: mqttHealth.broker,
-      llm: llmHealth.status,
-      storage: storageStatus.service,
       filebrowser: fileBrowserStatus,
-      media: mediaStatus.service,
       jellyfin: jellyfinStatus,
       network: this.networkService.getSnapshot().service
     };
