@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CL4P-TP Hub</title>
+    <link rel="stylesheet" href="/hub/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">CL4P-TP</p>
+        <h1>Hub</h1>
+        <p class="sub">Escolha um módulo.</p>
+      </header>
+
+      <section class="grid" id="modules">
+        <a class="card module" href="/notes/">
+          <h2>Notas</h2>
+          <p>Texto, imagens e fotos impressas na SUNMI.</p>
+        </a>
+        <a class="card module" href="/status-page/">
+          <h2>Status</h2>
+          <p>Monitoramento do servidor, serviços e storage.</p>
+        </a>
+        <a class="card module disabled" id="fileBrowserLink" href="#" target="_blank" rel="noreferrer">
+          <h2>FileBrowser</h2>
+          <p>Arquivos do NAS.</p>
+        </a>
+        <a class="card module disabled" id="jellyfinLink" href="#" target="_blank" rel="noreferrer">
+          <h2>Jellyfin</h2>
+          <p>Mídia da casa.</p>
+        </a>
+      </section>
+
+      <footer class="footer">
+        <span id="summary">Carregando status...</span>
+      </footer>
+    </main>
+
+    <script src="/hub/app.js"></script>
+  </body>
+</html>

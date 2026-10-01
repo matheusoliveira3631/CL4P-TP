@@ -9,6 +9,7 @@ const { createIntentRoutes } = require("./routes/intent.routes");
 const { createCommandRoutes } = require("./routes/command.routes");
 const { createAutomationRoutes } = require("./routes/automation.routes");
 const { createMediaRoutes } = require("./routes/media.routes");
+const { createNotesRoutes } = require("./routes/notes.routes");
 const { createAuthMiddleware } = require("./middlewares/auth.middleware");
 const { createRateLimitMiddleware } = require("./middlewares/rate-limit.middleware");
 const { createRequestLoggerMiddleware } = require("./middlewares/request-logger.middleware");
@@ -27,11 +28,10 @@ function createApp({ config, services }) {
   app.use(createRateLimitMiddleware(config));
   app.use(createAuthMiddleware(config));
 
-  app.get("/", (_req, res) => {
-    res.redirect("/status-page/");
-  });
-
+  app.use("/", express.static(path.join(config.paths.hubPageDir)));
   app.use("/status-page", express.static(path.join(config.paths.statusPageDir)));
+  app.use("/notes", express.static(path.join(config.paths.notesPageDir)));
+  app.use("/notes", createNotesRoutes(deps));
   app.use("/health", createHealthRoutes(deps));
   app.use("/status", createStatusRoutes(deps));
   app.use("/services", createServicesRoutes(deps));

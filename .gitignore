@@ -16,6 +16,9 @@ data/cache/*
 !data/cache/.gitkeep
 data/uploads/*
 !data/uploads/.gitkeep
+data/notes/notes.json
+data/notes/images/*
+!data/notes/images/.gitkeep
 data/db/*.db
 data/db/*.sqlite
 data/db/*.sqlite3
