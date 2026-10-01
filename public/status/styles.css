@@ -1,146 +1,129 @@
-:root {
-  color-scheme: light;
-  --bg: #f2efe8;
-  --panel: rgba(255, 252, 245, 0.85);
-  --text: #1d221c;
-  --muted: #66715f;
-  --line: rgba(44, 56, 38, 0.12);
-  --ok: #1e8a53;
-  --warn: #c17b2e;
-  --bad: #b44343;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  color: var(--text);
-  background:
-    radial-gradient(circle at top right, rgba(200, 170, 120, 0.22), transparent 30%),
-    linear-gradient(135deg, #f7f4ec, var(--bg));
-}
-
-.shell {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.hero {
-  margin-bottom: 24px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-h1,
-h2,
-p,
-dl,
-ul {
-  margin-top: 0;
-}
-
-.grid {
+.bento {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.panel.system {
+  grid-column: span 4;
+}
+
+.panel.storage {
+  grid-column: span 2;
+}
+
+.panel.services {
+  grid-column: span 2;
+}
+
+@media (max-width: 720px) {
+  .bento {
+    grid-template-columns: 1fr;
+  }
+
+  .panel.system,
+  .panel.storage,
+  .panel.services {
+    grid-column: span 1;
+  }
+}
+
+/* --- system stats --- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+/* --- storage --- */
+
+.storage-root {
   margin-bottom: 16px;
 }
 
-.card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 18px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(38, 43, 32, 0.05);
+.storage-root:last-child {
+  margin-bottom: 0;
 }
 
-dl {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
+.storage-root-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
 }
 
-dt {
-  color: var(--muted);
-}
-
-dd {
-  margin: 0;
+.storage-root-name {
   font-weight: 600;
 }
 
-.service {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
+.storage-root-free {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
-.service:last-child {
+.storage-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.storage-bar-fill.warn {
+  background: linear-gradient(90deg, var(--warn), var(--bad));
+}
+
+.storage-root-unavailable {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* --- services --- */
+
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.88rem;
+}
+
+.service-row:last-child {
   border-bottom: 0;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
+.service-name {
+  flex: 1;
+  text-transform: capitalize;
 }
 
-.badge.up {
-  background: rgba(30, 138, 83, 0.12);
-  color: var(--ok);
-}
-
-.badge.degraded {
-  background: rgba(193, 123, 46, 0.15);
-  color: var(--warn);
-}
-
-.badge.down,
-.badge.disabled {
-  background: rgba(180, 67, 67, 0.12);
-  color: var(--bad);
-}
-
-ul {
-  padding-left: 18px;
-}
-
-a {
-  color: inherit;
-}
-
-.footer {
-  margin-top: 16px;
+.service-detail {
   color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.sub a {
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.85rem;
-}
-
-@media (max-width: 640px) {
-  .shell {
-    padding: 16px;
-  }
+  font-size: 0.75rem;
 }

@@ -32,6 +32,17 @@ function extensionForMime(mime) {
   return ".jpg";
 }
 
+function mimeForExtension(fileName) {
+  const extension = path.extname(fileName || "").toLowerCase();
+  if (extension === ".png") {
+    return "image/png";
+  }
+  if (extension === ".webp") {
+    return "image/webp";
+  }
+  return "image/jpeg";
+}
+
 class NotesService {
   constructor({ paths, logger }) {
     this.paths = paths;
@@ -62,6 +73,50 @@ class NotesService {
     const filePath = path.join(this.paths.notesImagesDir, fileName);
     fs.writeFileSync(filePath, buffer);
     return fileName;
+  }
+
+  getById(id) {
+    const note = this.loadAll().find((entry) => entry.id === id);
+    if (!note) {
+      return null;
+    }
+    return {
+      ...note,
+      imageUrl: note.imageFile ? `/notes/images/${note.imageFile}` : null
+    };
+  }
+
+  readImageAsBase64(imageFile) {
+    const filePath = path.join(this.paths.notesImagesDir, imageFile);
+    const buffer = fs.readFileSync(filePath);
+    return {
+      base64: buffer.toString("base64"),
+      mime: mimeForExtension(imageFile)
+    };
+  }
+
+  updatePrintResult(id, printResult) {
+    const notes = this.loadAll();
+    const index = notes.findIndex((entry) => entry.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const timestamp = new Date().toISOString();
+    notes[index] = {
+      ...notes[index],
+      printStatus: printResult ? printResult.status : notes[index].printStatus,
+      printError: printResult && printResult.error ? printResult.error : null,
+      printedAt: printResult && printResult.status === "completed" ? timestamp : notes[index].printedAt
+    };
+
+    this.saveAll(notes);
+
+    return {
+      ...notes[index],
+      imageUrl: notes[index].imageFile ? `/notes/images/${notes[index].imageFile}` : null
+    };
   }
 
   create({ text, image, printResult }) {

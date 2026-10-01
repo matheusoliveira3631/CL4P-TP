@@ -32,6 +32,7 @@ function createApp({ config, services }) {
     res.sendFile(path.join(config.paths.hubPageDir, "index.html"));
   });
   app.use("/hub", express.static(path.join(config.paths.hubPageDir)));
+  app.use("/shared", express.static(path.join(config.paths.publicDir, "shared")));
   app.use("/status-page", express.static(path.join(config.paths.statusPageDir)));
   app.use("/notes", express.static(path.join(config.paths.notesPageDir)));
   app.use("/notes", createNotesRoutes(deps));

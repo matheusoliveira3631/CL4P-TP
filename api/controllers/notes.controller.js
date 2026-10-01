@@ -60,6 +60,43 @@ function createNotesController({ notesService, executor }) {
       });
 
       res.json({ ok: true, note, execution });
+    },
+
+    async reprint(req, res) {
+      const note = notesService.getById(req.params.id);
+
+      if (!note) {
+        res.status(404).json({ ok: false, error: "note_not_found" });
+        return;
+      }
+
+      const image = note.imageFile ? notesService.readImageAsBase64(note.imageFile) : null;
+
+      const intent = {
+        type: "automation",
+        action: "request_print",
+        target: "sunmi",
+        source: "notes-ui",
+        valid: true,
+        errors: [],
+        confidence: 1,
+        rawText: note.text,
+        normalizedText: note.text,
+        location: "",
+        params: {
+          content: note.text,
+          image: image ? { base64: image.base64, mime: image.mime, mode: "photo" } : undefined
+        }
+      };
+
+      const execution = await executor.executeIntent(intent, {
+        source: "notes-ui",
+        requestId: req.get("x-request-id") || ""
+      });
+
+      const updated = notesService.updatePrintResult(note.id, execution);
+
+      res.json({ ok: true, note: updated, execution });
     }
   };
 }

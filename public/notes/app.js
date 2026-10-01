@@ -1,6 +1,6 @@
 const state = {
   rotation: 0,
-  sourceImage: null, // HTMLImageElement or HTMLVideoElement-derived canvas
+  sourceImage: null,
   stream: null
 };
 
@@ -77,13 +77,18 @@ function setupImageInput() {
   });
 }
 
+function setCameraMode(active) {
+  document.getElementById("attachRow").hidden = active;
+  document.getElementById("cameraControlsRow").hidden = !active;
+  document.getElementById("cameraPreview").hidden = !active;
+}
+
 function stopCamera() {
   if (state.stream) {
     state.stream.getTracks().forEach((track) => track.stop());
     state.stream = null;
   }
-  document.getElementById("cameraPreview").hidden = true;
-  document.getElementById("cameraControls").hidden = true;
+  setCameraMode(false);
 }
 
 async function startCamera() {
@@ -95,8 +100,7 @@ async function startCamera() {
     state.stream = stream;
     const video = document.getElementById("cameraPreview");
     video.srcObject = stream;
-    video.hidden = false;
-    document.getElementById("cameraControls").hidden = false;
+    setCameraMode(true);
   } catch (error) {
     setFormStatus(
       "Não foi possível acessar a câmera (pode exigir HTTPS neste navegador).",
@@ -163,6 +167,12 @@ function formatTimestamp(value) {
   }
 }
 
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = value;
+  return div.innerHTML;
+}
+
 async function loadHistory() {
   try {
     const response = await fetch("/notes/list");
@@ -176,25 +186,66 @@ async function loadHistory() {
 
     container.innerHTML = payload.notes
       .map((note) => `
-        <div class="note-item">
+        <div class="note-item" data-note-id="${note.id}">
           <div class="meta">
-            ${formatTimestamp(note.timestamp)}
+            <span>${formatTimestamp(note.timestamp)}</span>
             <span class="note-status ${note.printStatus}">${note.printStatus}</span>
           </div>
-          ${note.text ? `<div>${escapeHtml(note.text)}</div>` : ""}
+          ${note.text ? `<div class="note-text">${escapeHtml(note.text)}</div>` : ""}
           ${note.imageUrl ? `<img src="${note.imageUrl}" alt="Nota" />` : ""}
+          <button type="button" class="reprint-button" data-reprint="${note.id}">↻ Reimprimir</button>
         </div>
       `)
       .join("");
+
+    container.querySelectorAll("[data-reprint]").forEach((button) => {
+      button.addEventListener("click", () => reprintNote(button.dataset.reprint, button));
+    });
   } catch (error) {
     document.getElementById("notesList").innerHTML = '<p class="hint bad">Falha ao carregar histórico.</p>';
   }
 }
 
-function escapeHtml(value) {
-  const div = document.createElement("div");
-  div.textContent = value;
-  return div.innerHTML;
+async function reprintNote(id, button) {
+  const token = getToken();
+  if (!token) {
+    setFormStatus("Token não informado.", "bad");
+    return;
+  }
+
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "Reimprimindo...";
+
+  try {
+    const response = await fetch(`/notes/${id}/reprint`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || "Falha ao reimprimir");
+    }
+
+    if (payload.execution && payload.execution.status !== "completed") {
+      setFormStatus(`Reimpressão falhou (${payload.execution.error || payload.execution.status}).`, "bad");
+    } else {
+      setFormStatus("Nota reimpressa.", "ok");
+    }
+
+    await loadHistory();
+  } catch (error) {
+    if (error.message === "invalid_api_token") {
+      localStorage.removeItem("cl4ptpApiToken");
+    }
+    setFormStatus(`Erro ao reimprimir: ${error.message}`, "bad");
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
 }
 
 function setupForm() {

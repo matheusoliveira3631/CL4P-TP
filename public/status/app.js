@@ -15,10 +15,6 @@ function formatBytes(value) {
   return `${current.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-function badge(state) {
-  return `<span class="badge ${state}">${state}</span>`;
-}
-
 async function fetchJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -27,67 +23,106 @@ async function fetchJson(url) {
   return response.json();
 }
 
-function renderSystem(status) {
-  const metrics = document.getElementById("system-metrics");
-  metrics.innerHTML = `
-    <dt>Host Uptime</dt><dd>${status.system.host.uptimeSec}s</dd>
-    <dt>Process Uptime</dt><dd>${status.system.process.uptimeSec}s</dd>
-    <dt>Free RAM</dt><dd>${formatBytes(status.system.memory.freeBytes)}</dd>
-    <dt>Total RAM</dt><dd>${formatBytes(status.system.memory.totalBytes)}</dd>
-    <dt>Node</dt><dd>${status.system.runtime.node}</dd>
+function stat(label, value) {
+  return `
+    <div class="stat">
+      <span class="stat-label">${label}</span>
+      <span class="stat-value">${value}</span>
+    </div>
   `;
 }
+
+function formatUptime(totalSeconds) {
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+function renderSystem(status) {
+  const container = document.getElementById("system-metrics");
+  container.innerHTML = [
+    stat("Uptime do host", formatUptime(status.system.host.uptimeSec)),
+    stat("Uptime do processo", formatUptime(status.system.process.uptimeSec)),
+    stat("RAM livre", formatBytes(status.system.memory.freeBytes)),
+    stat("RAM total", formatBytes(status.system.memory.totalBytes)),
+    stat("Node", status.system.runtime.node)
+  ].join("");
+}
+
+const STORAGE_ROOT_LABELS = {
+  repo_media: "Mídia",
+  repo_data: "Dados",
+  internal_shared: "Armazenamento interno",
+  external_otg: "HD externo (OTG)"
+};
+
+function renderStorage(status) {
+  const container = document.getElementById("storage");
+  const roots = Object.values(status.storage.roots).filter((root) => root.configured);
+
+  if (!roots.length) {
+    container.innerHTML = '<p class="hint">Nenhum root de armazenamento configurado.</p>';
+    return;
+  }
+
+  container.innerHTML = roots
+    .map((root) => {
+      const label = STORAGE_ROOT_LABELS[root.root] || root.root;
+
+      if (!root.available || root.totalBytes === null) {
+        return `
+          <div class="storage-root">
+            <div class="storage-root-head">
+              <span class="storage-root-name">${label}</span>
+            </div>
+            <div class="storage-root-unavailable">${root.error || "indisponível"}</div>
+          </div>
+        `;
+      }
+
+      const usedPct = Math.min(100, Math.round((root.usedBytes / root.totalBytes) * 100));
+      const warn = usedPct >= 85;
+
+      return `
+        <div class="storage-root">
+          <div class="storage-root-head">
+            <span class="storage-root-name">${label}</span>
+            <span class="storage-root-free">${formatBytes(root.freeBytes)} livres de ${formatBytes(root.totalBytes)}</span>
+          </div>
+          <div class="storage-bar">
+            <div class="storage-bar-fill ${warn ? "warn" : ""}" style="width: ${usedPct}%"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+const SERVICE_LABELS = {
+  api: "API",
+  mqttClient: "MQTT (cliente)",
+  mqttBroker: "MQTT (broker embutido)",
+  filebrowser: "FileBrowser",
+  jellyfin: "Jellyfin",
+  network: "Rede"
+};
 
 function renderServices(snapshot) {
   const container = document.getElementById("services");
   container.innerHTML = Object.entries(snapshot.services)
-    .map(([name, service]) => `
-      <div class="service">
-        <div>
-          <strong>${name}</strong>
-          <div>${service.error || ""}</div>
-        </div>
-        ${badge(service.state)}
-      </div>
-    `)
-    .join("");
-}
-
-function renderStorage(status) {
-  const container = document.getElementById("storage");
-  container.innerHTML = Object.values(status.storage.roots)
-    .map((root) => `
-      <div class="service">
-        <div>
-          <strong>${root.root}</strong>
-          <div>${root.path || "not configured"}</div>
-        </div>
-        <div>${root.available ? formatBytes(root.freeBytes) : root.error || "unavailable"}</div>
-      </div>
-    `)
-    .join("");
-}
-
-function renderLinks(status) {
-  const list = document.getElementById("links");
-  list.innerHTML = Object.entries(status.links)
-    .filter(([, value]) => Boolean(value))
-    .map(([label, value]) => `<li><a href="${value}" target="_blank" rel="noreferrer">${label}</a></li>`)
-    .join("");
-}
-
-async function renderMedia() {
-  const media = await fetchJson("/media/library");
-  const container = document.getElementById("media");
-  const roots = media.library.roots || {};
-  container.innerHTML = Object.entries(roots)
-    .map(([root, data]) => `
-      <div class="service">
-        <div>
-          <strong>${root}</strong>
-          <div>${data.path || "/"}</div>
-        </div>
-        <div>${Array.isArray(data.files) ? data.files.length : 0} entries</div>
+    .map(([key, service]) => `
+      <div class="service-row">
+        <span class="status-dot ${service.state}"></span>
+        <span class="service-name">${SERVICE_LABELS[key] || key}</span>
+        <span class="service-detail">${service.error || ""}</span>
       </div>
     `)
     .join("");
@@ -95,13 +130,11 @@ async function renderMedia() {
 
 async function refresh() {
   const status = await fetchJson("/status");
-  document.getElementById("summary").textContent = `API on ${status.network.bind.host}:${status.network.bind.port}`;
-  document.getElementById("last-updated").textContent = `Last updated: ${new Date().toLocaleString()}`;
+  document.getElementById("summary").textContent = `online em ${status.network.bind.host}:${status.network.bind.port}`;
+  document.getElementById("last-updated").textContent = `atualizado às ${new Date().toLocaleTimeString()}`;
   renderSystem(status);
-  renderServices(status.services);
   renderStorage(status);
-  renderLinks(status);
-  await renderMedia();
+  renderServices(status.services);
 }
 
 refresh().catch((error) => {
