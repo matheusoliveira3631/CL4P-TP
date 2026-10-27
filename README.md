@@ -78,10 +78,6 @@ npm test
 
 [CL4P-TP-Printer](https://github.com/matheusoliveira3631/CL4P-TP-Printer) is an Android app (Kotlin) that subscribes to the print topic on this server's MQTT broker, prints each job on a SUNMI POS terminal and reports the job status back.
 
-## Development Notes
-
-Parts of this project were built with Claude Code as an agentic development workflow. I set the architecture and requirements, review the changes, and keep the automated test suite green; the tests run on every push through GitHub Actions.
-
 ## Docs
 
 - [Architecture](docs/architecture.md)
