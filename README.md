@@ -1,5 +1,7 @@
 # CL4P-TP
 
+[![CI](https://github.com/matheusoliveira3631/CL4P-TP/actions/workflows/ci.yml/badge.svg)](https://github.com/matheusoliveira3631/CL4P-TP/actions/workflows/ci.yml)
+
 CL4P-TP is an offline-first personal server MVP aimed at Android + Termux, with Node.js as the core runtime and a modular architecture that can grow toward local LLM parsing, MQTT automation, lightweight NAS access, and media streaming.
 
 This repository is honest by design:
@@ -37,6 +39,8 @@ Mutable endpoints require a token. By default the example token is:
 changeme-cl4ptp
 ```
 
+This is an example value for local runs only. Set `CL4PTP_API_TOKEN` in your `.env` before exposing the server on a network.
+
 Send it as:
 
 - `Authorization: Bearer <token>`
@@ -69,6 +73,14 @@ npm run doctor
 npm run status
 npm test
 ```
+
+## Companion App
+
+[CL4P-TP-Printer](https://github.com/matheusoliveira3631/CL4P-TP-Printer) is an Android app (Kotlin) that subscribes to the print topic on this server's MQTT broker, prints each job on a SUNMI POS terminal and reports the job status back.
+
+## Development Notes
+
+Parts of this project were built with Claude Code as an agentic development workflow. I set the architecture and requirements, review the changes, and keep the automated test suite green; the tests run on every push through GitHub Actions.
 
 ## Docs
 
